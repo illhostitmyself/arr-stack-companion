@@ -1,0 +1,42 @@
+# Sonarr, Radarr and Seerr sharing one data root.
+# Needs: Docker with Compose v2, a filled-in .env (see ../../.env.example).
+# Ports and mounts are examples; change them to your setup.
+services:
+  seerr:
+    image: ${SEERR_IMAGE:?set in .env}
+    environment:
+      - TZ=${TZ}
+    # Seerr runs as a non-root user: its config folder must be owned by that user.
+    volumes:
+      - ${CONFIG_ROOT}/seerr:/app/config
+    ports:
+      - "5055:5055"
+    restart: unless-stopped
+
+  sonarr:
+    image: ${SONARR_IMAGE:?set in .env}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/sonarr:/config   # local disk, never NFS/SMB (SQLite)
+      - ${DATA_ROOT}:/data              # the whole root: one file system
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+
+  radarr:
+    image: ${RADARR_IMAGE:?set in .env}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/radarr:/config
+      - ${DATA_ROOT}:/data
+    ports:
+      - "7878:7878"
+    restart: unless-stopped

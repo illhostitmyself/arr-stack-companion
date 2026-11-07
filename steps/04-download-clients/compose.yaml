@@ -1,0 +1,97 @@
+# The full stack: Seerr, Sonarr, Radarr, Prowlarr, SABnzbd, and a VPN'd qBittorrent.
+# Needs: Docker with Compose v2, a filled-in .env (see ../../.env.example).
+# Ports and mounts are examples; change them to your setup.
+services:
+  seerr:
+    image: ${SEERR_IMAGE:?set in .env}
+    environment:
+      - TZ=${TZ}
+    # Seerr runs as a non-root user: its config folder must be owned by that user.
+    volumes:
+      - ${CONFIG_ROOT}/seerr:/app/config
+    ports:
+      - "5055:5055"
+    restart: unless-stopped
+
+  sonarr:
+    image: ${SONARR_IMAGE:?set in .env}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/sonarr:/config   # local disk, never NFS/SMB (SQLite)
+      - ${DATA_ROOT}:/data              # the whole root: one file system
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+
+  radarr:
+    image: ${RADARR_IMAGE:?set in .env}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/radarr:/config
+      - ${DATA_ROOT}:/data
+    ports:
+      - "7878:7878"
+    restart: unless-stopped
+
+  prowlarr:
+    image: ${PROWLARR_IMAGE:?set in .env}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/prowlarr:/config
+    ports:
+      - "9696:9696"
+    restart: unless-stopped
+
+  sabnzbd:
+    image: ${SABNZBD_IMAGE:?set in .env}
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/sabnzbd:/config
+      - ${DATA_ROOT}/usenet:/data/usenet   # same path as Sonarr sees: no remote path mapping
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # VPN pattern only: the client shares the VPN container's network namespace.
+  # VPN_IMAGE and its provider settings are yours to supply.
+  vpn:
+    image: ${VPN_IMAGE:?set in .env}
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "8081:8081"   # the client's web UI is declared here, on the VPN container
+    restart: unless-stopped
+
+  qbittorrent:
+    image: ${QBITTORRENT_IMAGE:?set in .env}
+    network_mode: "service:vpn"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=${UMASK}
+      - TZ=${TZ}
+      - WEBUI_PORT=8081
+    volumes:
+      - ${CONFIG_ROOT}/qbittorrent:/config
+      - ${DATA_ROOT}/torrents:/data/torrents
+    depends_on:
+      - vpn
+    restart: unless-stopped
