@@ -4,7 +4,7 @@ Companion repo for the video. Follow one request from a phone to the Plex librar
 Seerr, Sonarr/Radarr, Prowlarr, a download client (behind a VPN if you torrent),
 hardlinks, Plex and Bazarr.
 
-**Watch:** {{VIDEO_URL}}
+**Watch:** https://www.youtube.com/watch?v=bZfSArJOKvc
 
 These are examples to read, copy and adapt, not a product. Every hostname, path, ID and
 key is a placeholder. I run everything on Kubernetes with Helm; the video says the same
